@@ -1,13 +1,12 @@
 # -*-coding:UTF-8-*-
-# -*- coding: utf-8 -*-
 # @Name: 叮咚买菜
-# @Version: 1.0
+# @Version: 1.0.1
 # @Author: Ifover
 # ===============================
 # cron: "0 5 0 * * *"
 # const $ = new Env('叮咚买菜')
 # 抓包获取 Cookie(有DDXQSESSID的)
-# export CookieDingDong='DDXQSESSID=aaa*********aaa@DDXQSESSID=bbb*********bbb', #多账号使用&或@隔开
+# export CookieDingDong='DDXQSESSID=aaa*********aaa@DDXQSESSID=bbb*********bbb', 多账号使用换行或&隔开
 # 300积分换3元（可以买30根葱）, 每天凌晨跑一次差不多了
 # ===============================
 
@@ -27,7 +26,7 @@ NOTIFY_STR = []
 
 ck = os.getenv(CK_NAME)
 if ck:
-    AUTH_CK += ck.replace("@", "&").split("&")
+    AUTH_CK += ck.replace("&", "\n").split("\n")
 
 
 class DingDong:
@@ -70,59 +69,59 @@ class DingDong:
         opt['notify'] and NOTIFY_STR.append(msg)
         opt['print'] and print(msg)
 
-    def getUserInfo(self):
+    def query_user_info(self):
         url = 'https://maicai.api.ddxq.mobi/user/info'
         params = {
             "station_id": ''.join(random.choice('0123456789abcdef') for _ in range(24)),
         }
 
         res = self.session.get(url, params=params, headers=self.headers)
-        resData = res.json()
-        if resData['code'] == 0:
-            self.user_name = resData['data']['name']
+        res_data = res.json()
+        if res_data['code'] == 0:
+            self.user_name = res_data['data']['name']
             self.print(f"登录成功")
             return True
         else:
             self.user_name = ''
-            self.print(resData['msg'], {'notify': True})
+            self.print(res_data['msg'], {'notify': True})
             return False
 
-    def queryCheckIn(self):
+    def query_check_in(self):
         url = 'https://sunquan.api.ddxq.mobi/api/v2/user/signin/'
         res = self.session.post(url, headers=self.headers)
-        resData = res.json()
+        res_data = res.json()
 
-        pointInfo = self.queryPoint()
-        pointNum = pointInfo['point_num'] if pointInfo else 'ERROR'
-        expirePoint = pointInfo['expire_point_display'] if pointInfo else 'ERROR'
+        point_info = self.query_point()
+        point_num = point_info['point_num'] if point_info else 'ERROR'
+        expire_point = point_info['expire_point_display'] if point_info else 'ERROR'
 
-        if resData['code'] == 0:
-            self.print(f"获得积分：{resData['data']['point']}个")
-            self.print(f"总积分：{pointNum}个")
-            self.print(f"已连续签到：{resData['data']['sign_series']}天")
-            self.print(expirePoint)
+        if res_data['code'] == 0:
+            self.print(f"获得积分：{res_data['data']['point']}个")
+            self.print(f"总积分：{point_num}个")
+            self.print(f"已连续签到：{res_data['data']['sign_series']}天")
+            self.print(expire_point)
         else:
             self.user_name = ''
-            self.print(resData['msg'], {'notify': True})
+            self.print(res_data['msg'], {'notify': True})
 
-    def queryPoint(self):
+    def query_point(self):
         url = 'https://maicai.api.ddxq.mobi/point/home'
         params = {
             "station_id": ''.join(random.choice('0123456789abcdef') for _ in range(24)),
         }
 
         res = self.session.get(url, params=params, headers=self.headers)
-        resData = res.json()
-        if resData['code'] == 0:
-            return resData['data']
+        res_data = res.json()
+        if res_data['code'] == 0:
+            return res_data['data']
         else:
             return False
 
     def start(self):
-        self.print(f"---------------- 账号[{self.index}] ----------------", {'clear': True})
-        if self.getUserInfo():
+        self.print(f"\n---------------- 账号[{self.index}] ----------------", {'clear': True})
+        if self.query_user_info():
             self.print("============== 每日签到 ==============", {'clear': True})
-            self.queryCheckIn()
+            self.query_check_in()
 
 
 def exit_now():
@@ -131,17 +130,21 @@ def exit_now():
 
     print("\n============== 推送 ==============")
     NOTIFY_STR.append("\n\n本通知 By：https://github.com/Ifover/TigaScript")
-    from notify import send
-    if send:
-        send(TASK_NAME, "\n".join(NOTIFY_STR))
-    sys.exit()
+    try:
+        from notify import send
+        if send:
+            send(TASK_NAME, "\n".join(NOTIFY_STR))
+    except Exception as e:
+        print(f"加载通知服务失败：{e}")
+    finally:
+        sys.exit()
 
 
 if __name__ == '__main__':
     if not AUTH_CK:
         print(f"未找到变量，请检查变量{CK_NAME}")
         sys.exit()
-    print(f'共找到{len(AUTH_CK)}个账号~\n')
+    print(f'共找到{len(AUTH_CK)}个账号~')
     for index, ck in enumerate(AUTH_CK):
         DingDong(index + 1, ck).start()
     exit_now()
