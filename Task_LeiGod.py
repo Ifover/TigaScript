@@ -1,12 +1,12 @@
 # -*-coding:UTF-8-*-
 # @Name: 雷神加速器
-# @Version: 1.0
+# @Version: 1.0.1
 # @Author: Ifover
 # ===============================
 # cron: "0 4 * * *"
 # const $ = new Env('雷神加速器')
 # 抓包获取 token
-# export TokenLeiGod='s*asdasd*asd*****a@b***********bbb', 多账号使用换行或&隔开
+# export TokenLeiGod='s*asdasd*asd*****a&b***********bbb', 多账号使用换行或&隔开
 # 防止某人用完不关浪费时间，定个时间自动关闭
 # ===============================
 
@@ -22,7 +22,6 @@ TASK_NAME = "雷神加速器"
 CK_NAME = "TokenLeiGod"
 AUTH_CK = []
 NOTIFY_STR = []
-session = requests.session()
 
 ck = os.getenv(CK_NAME)
 if ck:
@@ -101,7 +100,7 @@ class LeiGod:
         try:
             res = self.session.post(url, json=json)
             res_data = res.json()
-            # print(res_data)
+
             if res_data['code'] == 0:
                 self.account_token = res_data['data']['account_token']
                 self.query_user_info()
