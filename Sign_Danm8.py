@@ -1,6 +1,6 @@
 # -*-coding:UTF-8-*-
 # @Name: 耽漫吧
-# @Version: 1.0
+# @Version: 1.0.1
 # @Author: Ifover
 # ===============================
 # cron: "0 5 0 * * *"
@@ -290,7 +290,7 @@ class Danm8:
             self.print("============== 每日签到 ==============", {'clear': True})
             self.query_check_info()
 
-            self.print("=============== 每日回复 ===============", {'clear': True})
+            self.print("============== 每日回复 ==============", {'clear': True})
             self.query_forum_42()
 
             self.print("=============== 摇摇乐 ===============", {'clear': True})
