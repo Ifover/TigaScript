@@ -1,6 +1,6 @@
 # -*-coding:UTF-8-*-
 # @Name: 耽漫吧
-# @Version: 1.1
+# @Version: 1.1.1
 # @Author: Ifover
 # ===============================
 # cron: "5 0,14 * * *"
