@@ -1,13 +1,14 @@
 # -*-coding:UTF-8-*-
 # @Name: 耽漫吧
-# @Version: 1.0.1
+# @Version: 1.1
 # @Author: Ifover
 # ===============================
-# cron: "0 5 0 * * *"
+# cron: "5 0,14 * * *"
 # const $ = new Env('耽漫吧')
 # 网页登录后复制整个Cookie
 # export CookieDanm8='71***; 71***; _dx_capt**d...', 多账号使用换行或&隔开
-# 没什么得用，一天就20金币左右，一个资源就十几金币了
+# 没什么用，一天就20金币左右，一个资源就十几金币了
+# v1.1 [修复]每日签到, [优化]领取在线奖励等待时间, [新增]每日汇总
 # ===============================
 
 import requests
@@ -37,7 +38,8 @@ CK_NAME = "CookieDanm8"
 AUTH_CK = []
 NOTIFY_STR = []
 
-ck = os.getenv(CK_NAME)
+_ck = "71U2_2132_saltkey=Z5I0mJK3; 71U2_2132_lastvisit=1692656466; _dx_captcha_cid=03895835; _dx_captcha_vid=D33C5CB82A64B4D8836C08A655115DF6CEB41A0EAECFE6EC5B0E1F9708A6B53C5149E3A8456CE3E028E7964C98AF824A707474A55AEE9A433C73F3ACA3F3046C3C7AD9F7A24490C1A7635E2452155C9B; 71U2_2132_auth=022bIHG8VNaLOnuX6mVWVwardEzPpibwzok%2FjK3uu7gVZ5%2FkRyj3MZYXKFiVn7b3n1zlkNBLCnlJtoSh9S0hS3Q5Gyk; 71U2_2132_smile=5D1; 71U2_2132_atarget=1; 71U2_2132_nofavfid=1; 71U2_2132_editormode_e=-1; 71U2_2132_home_diymode=1; 71U2_2132_visitedfid=42D50D46D51; 71U2_2132_viewid=tid_178453; 71U2_2132_st_p=430751%7C1692988726%7Cab514bc15d64362a73d681a52b1ecd7a; 71U2_2132_st_t=430751%7C1692989046%7Cda9d1cc344c942f7b483b40e00f366e4; 71U2_2132_forum_lastvisit=D_51_1692660206D_50_1692661623D_42_1692989046; 71U2_2132_sid=Fdnj8W; 71U2_2132_lip=116.238.46.236%2C1693297921; 71U2_2132_pc_size_c=0; 71U2_2132_ulastactivity=0fa220JCL7MhcOTOALVP2jH1BgIbqquxN61Wc0Mjlso4ZtcB%2BYqu; 71U2_2132_sendmail=1; 71U2_2132_lastact=1693299422%09home.php%09spacecp"
+ck = os.getenv(CK_NAME, _ck)
 if ck:
     AUTH_CK += ck.replace("&", "\n").split("\n")
 
@@ -116,7 +118,6 @@ class Danm8:
             res = requests.get(url, headers=self.headers)
             soup = BeautifulSoup(res.text, "html.parser")
             check_info_list = soup.select('#fx_checkin2_menu .tip_c')
-
             if len(check_info_list):
                 self.print(check_info_list[0].text)
             else:
@@ -129,7 +130,7 @@ class Danm8:
         url = "http://www.danm8-1.com/plugin.php"
         params = {
             "id": "fx_checkin:checkin",
-            "formhash": "5d1eb974",
+            "formhash": self.form_hash,
             "infloat": "yes",
             "handlekey": "fx_checkin",
             "inajax": 1
@@ -185,9 +186,10 @@ class Danm8:
         params = {
             "mod": "space"
         }
-        flag = True
+        flag = True  # 防止重复打印可领取次数
         while True:
-            sleep = random.randint(35, 55)
+            # 默认每次等待180-300s
+            delay_time = random.randint(180, 300)
             try:
                 res = requests.get(url, params=params, headers=self.headers)
                 condition_list = re.findall(r"condition.=.(\d+);", res.text)
@@ -196,32 +198,42 @@ class Danm8:
                     self.condition = int(condition_list[0])
                     self.current = int(current_list[0])
 
+                if self.condition > 0 and self.current > 0:
+
                     times_list = re.findall(r"可领取次数：(.*)</span>", res.text)
+
                     if len(times_list) and flag:
                         self.print(f'可领取次数：[{times_list[0]}]')
                         flag = False
 
-                    minute = int((int(self.condition) - int(self.current)) / 60)
-                    second = (int(self.condition) - int(self.current)) % 60
+                    minute = int((self.condition - self.current) / 60)
+                    second = (self.condition - self.current) % 60
                     if minute < 10:
                         minute = '0' + str(minute)
                     if second < 10:
                         second = '0' + str(second)
 
-                    if int(self.current) > 0 and int(self.condition) > 0:
-                        self.print(f'倒计时：[{minute}: {second}]，等待{sleep}s')
+                    if (self.condition - self.current) > 0:
+                        # 如果剩余时间<=300s 直接用剩余时间+10s做延迟
+                        if (self.condition - self.current) <= 300:
+                            delay_time = (self.condition - self.current) + 10
+
+                        self.print(f'倒计时：[{minute}: {second}]，等待{delay_time}s')
 
                     if self.current >= self.condition:
+                        # 领取奖励
                         self.query_plugin()
+
+                        # 重置打印领取次数状态
                         flag = True
                 else:
                     self.print('今日奖励已领完')
                     break
-                    # exit_now()
+
             except Exception as e:
                 self.print(e, {'notify': True})
 
-            time.sleep(sleep)
+            time.sleep(delay_time)
 
             if int(self.condition) == -1:
                 break
@@ -282,6 +294,22 @@ class Danm8:
         else:
             self.print(f'[{tid}]回复发布失败', {'notify': True})
 
+    def query_show_credit(self):
+        u = 'http://www.danm8-1.com/home.php?mod=spacecp&ac=credit&showcredit=1'
+        try:
+            r = requests.get(url=u, headers=self.headers)
+            soup = BeautifulSoup(r.text, "html.parser")
+            c_l = soup.select('.creditl.mtm.bbda.cl')
+            for c in c_l:
+                t = re.findall(r"金钱:.(\d+)[\s|\S]+威望:.(\d+)[\s|\S]+贡献:.(\d+)[\s|\S]+积分:.(\d+)", c.text)
+
+                if len(t) > 0:
+                    s = t[0]
+                    self.print(f"积分: {s[3]}，金钱: {s[0]}，威望: {s[1]}，贡献: {s[2]}")
+
+        except Exception as e:
+            self.print(e, {'notify': True})
+
     def start(self):
         self.print(f"\n---------------- 账号[{self.index}] ----------------", {'clear': True})
 
@@ -298,6 +326,9 @@ class Danm8:
 
             self.print("============== 在线奖励 ==============", {'clear': True})
             self.query_home()
+
+            self.print("============== 每日汇总 ==============", {'clear': True})
+            self.query_show_credit()
 
 
 def exit_now():

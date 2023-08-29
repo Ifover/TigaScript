@@ -1,9 +1,9 @@
 # -*-coding:UTF-8-*-
 # @Name: 叮咚买菜
-# @Version: 1.0.1
+# @Version: 1.0.2
 # @Author: Ifover
 # ===============================
-# cron: "0 5 0 * * *"
+# cron: "5 0 * * *"
 # const $ = new Env('叮咚买菜')
 # 抓包获取 Cookie(有DDXQSESSID的)
 # export CookieDingDong='DDXQSESSID=aaa*********aaa@DDXQSESSID=bbb*********bbb', 多账号使用换行或&隔开
