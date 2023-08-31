@@ -1,6 +1,6 @@
 # -*-coding:UTF-8-*-
 # @Name: 耽漫吧
-# @Version: 1.1.1
+# @Version: 1.2
 # @Author: Ifover
 # ===============================
 # cron: "5 0,14 * * *"
@@ -9,6 +9,7 @@
 # export CookieDanm8='71***; 71***; _dx_capt**d...', 多账号使用换行或&隔开
 # 没什么用，一天就20金币左右，一个资源就十几金币了
 # v1.1 [修复]每日签到, [优化]领取在线奖励等待时间, [新增]每日汇总
+# v1.2 [修复]延迟上的一些问题
 # ===============================
 
 import requests
@@ -172,7 +173,7 @@ class Danm8:
         try:
             res = requests.post(url, data=data, params=params, headers=self.headers)
             if res.status_code == 200:
-                delay = random.randint(10, 15)
+                delay = random.randint(30, 45)
                 self.print(f'摇一摇成功，等待{delay}s')
                 time.sleep(delay)
                 self.query_yaoyaole_info()
@@ -189,6 +190,9 @@ class Danm8:
         while True:
             # 默认每次等待180-300s
             delay_time = random.randint(180, 300)
+            # 重置两个计时器
+            self.condition = -1
+            self.current = -1
             try:
                 res = requests.get(url, params=params, headers=self.headers)
                 condition_list = re.findall(r"condition.=.(\d+);", res.text)
@@ -248,7 +252,7 @@ class Danm8:
         res = requests.get(url, params=params, headers=self.headers)
         show_right_list = re.findall(r"showRight\(\'(.*)\s\'\)", res.text)
         if len(show_right_list) > 0:
-            self.print(show_right_list[0])
+            self.print(show_right_list[0] + '\n')
 
     def query_forum_42(self):
         # / reply
