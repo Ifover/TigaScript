@@ -1,6 +1,6 @@
 # -*-coding:UTF-8-*-
 # @Name: 二饼
-# @Version: 1.0
+# @Version: 1.1
 # @Author: Ifover
 # ===============================
 # cron: "5 0 * * *"
@@ -10,6 +10,7 @@
 # 其实复制整个Cookie就行, 但是后面要跟上auth, 还有别忘记加上分号分割
 # export CookieErBing='session=xxx;remember_token=xxx;ms_session=xxx;auth=xxx', 多账号使用换行或&隔开
 # 自用
+# v1.1 [修复]分享失败的问题
 # ===============================
 
 import requests
@@ -176,8 +177,25 @@ class ErBing:
         except Exception as e:
             self.print(e, {'notify': True})
 
-    def query_share(self):
-        u = 'https://v2.diershoubing.com/common/share_count/1/114893/?channel=wx_session'
+    def query_task_list(self):
+        u = "https://v2.diershoubing.com/feed/task_rec"
+        try:
+            r = self.session.get(url=u, headers=self.headers)
+            data = r.json()
+            if data['ret'] == 0:
+                if 'feeds' in data:
+                    feeds = data['feeds']
+                    if len(feeds) > 0:
+                        feed_id = feeds[0]['feed_id']
+                        self.query_share(feed_id)
+                    # self.print(res['msg'])
+            else:
+                self.print(data['message'], {'notify': True})
+        except Exception as e:
+            self.print(e, {'notify': True})
+
+    def query_share(self, id):
+        u = f'https://v2.diershoubing.com/common/share_count/1/{id}/?channel=wx_session'
 
         try:
             r = self.session.get(url=u, headers=self.headers)
@@ -251,7 +269,7 @@ class ErBing:
         self.query_video_ad()
 
         self.print("============== 每日分享 ==============", {'clear': True})
-        self.query_share()
+        self.query_task_list()
 
         self.print("\n============== 今日汇总 ==============", {'clear': True})
         self.query_status()
